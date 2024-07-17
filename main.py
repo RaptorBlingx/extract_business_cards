@@ -73,8 +73,7 @@ if selected == "Extract":
         directory_name = "uploaded_cards"
         file_name = imageUploaded.name
 
-
-        # --------This function processes the image and extracts the data from image using easyocr--------
+        # Function to process the image and extract data using easyocr
         def ocr_image(image, result):
             for detection in result:
                 top_left = tuple(detection[0][0])
@@ -84,10 +83,8 @@ if selected == "Extract":
                 text = detection[1]
                 confidence_score = str(detection[2])
 
-                # ------Draws Rectangle around the recognized text------
                 cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 2)
 
-                # ------Displaying the recognized text on the top left of that rectangle in the previous step------
                 org = (top_left[0], top_left[1] - 11)
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 cv2.putText(image, text, org, font, 0.75, (255, 0, 0), 2)
@@ -95,21 +92,17 @@ if selected == "Extract":
             plt.axis('off')
             plt.imshow(image)
 
-
-        # --------Here we are displaying uploaded card before processing--------
+        # Display uploaded card before processing
         col1, col2 = st.columns(2, gap="large")
         with col1:
             st.write(" ")
             st.markdown("### Uploaded Card before Processing")
             st.image(imageUploaded)
 
-        # --------Here we are displaying uploaded card's processed Image with Data Extraction--------
+        # Display uploaded card's processed Image with Data Extraction
         with col2:
             st.write(" ")
             with st.spinner("Processing image..."):
-                # current_directory = os.getcwd()
-                # directory_name = "uploaded_cards"
-                # file_name = uploaded_card.name
                 card_img = os.path.join(current_directory, directory_name, file_name)
                 image = cv2.imread(card_img)
                 result = reader.readtext(card_img)
@@ -117,105 +110,79 @@ if selected == "Extract":
                 st.set_option('deprecation.showPyplotGlobalUse', False)
                 st.pyplot(ocr_image(image, result))
 
-        # ----Now using easyOCR globally to extract the text data only, so that we can export it into mySQL database----
+        # Extract text data using easyOCR
         card_img = os.path.join(current_directory, directory_name, file_name)
         result = reader.readtext(card_img, detail=0, paragraph=False)
 
-
-        # -------Now to save image in mySQL database onw need to convert it into Binary format-------
+        # Function to convert image to binary data
         def binaryData_Conversion(f1):
-    # Convert image data to binary data format and then to base64 encoded string
             with open(f1, 'rb') as f1:
                 binary_image = f1.read()
             return base64.b64encode(binary_image).decode('utf-8')
 
-
+        # Initialize data dictionary with empty strings
         data = {
-            "company_name": [],
-            "card_holder_name": [],
-            "designation": [],
-            "mobile_phone_number": [],
-            "email_address": [],
-            "website": [],
-            "area": [],
-            "city": [],
-            "state": [],
-            "pincode": [],
+            "company_name": [""],
+            "card_holder_name": [""],
+            "designation": [""],
+            "mobile_phone_number": [""],
+            "email_address": [""],
+            "website": [""],
+            "area": [""],
+            "city": [""],
+            "state": [""],
+            "pincode": [""],
             "image": binaryData_Conversion(card_img)
         }
 
-
         def extractData(res):
             for list_index, i in enumerate(res):
-
-                # ---------This is to extract the Website URL---------
+                # Website
                 if "www " in i.lower() or "www." in i.lower():
-                    data["website"].append(i)
+                    data["website"][0] = i
                 elif "WWW" in i:
-                    data["website"] = res[4] + "." + res[5]
+                    data["website"][0] = res[4] + "." + res[5]
 
-                # ---------This is to extract the Company Name---------
-                # elif list_index == len(res) - 1:
-                #     data["company_name"].append(i)
-                elif i == "selva" or i == "digitals":
-                    data["company_name"].append(i)
-                    if len(data["company_name"]) > 1:
-                        data["company_name"] = " ".join(data["company_name"])
-                elif i == "GLOBAL" or i == "INSURANCE":
-                    data["company_name"].append(i)
-                    if len(data["company_name"]) > 1:
-                        data["company_name"] = " ".join(data["company_name"])
-                elif i == "BORCELLE" or i == "AIRLINES":
-                    data["company_name"].append(i)
-                    if len(data["company_name"]) > 1:
-                        data["company_name"] = " ".join(data["company_name"])
-                elif i == "Family" or i == "Restaurant":
-                    data["company_name"].append(i)
-                    if len(data["company_name"]) > 1:
-                        data["company_name"] = " ".join(data["company_name"])
-                elif i == "Sun Electricals":
-                    data["company_name"].append(i)
-                    if len(data["company_name"]) > 1:
-                        data["company_name"] = " ".join(data["company_name"])
+                # Company Name
+                elif i in ["selva", "digitals", "GLOBAL", "INSURANCE", "BORCELLE", "AIRLINES", "Family", "Restaurant", "Sun Electricals"]:
+                    data["company_name"][0] = i if not data["company_name"][0] else data["company_name"][0] + " " + i
 
-                # ---------This is to extract the Email Address---------
+                # Email Address
                 elif "@" in i:
-                    data["email_address"].append(i)
+                    data["email_address"][0] = i
 
-                # ---------This is to extract the Designation---------
+                # Designation
                 elif list_index == 1:
-                    data["designation"].append(i)
+                    data["designation"][0] = i
 
-                # ---------This is to extract the Card Holder Name---------
+                # Card Holder Name
                 elif list_index == 0:
-                    data["card_holder_name"].append(i)
+                    data["card_holder_name"][0] = i
 
-                # ---------This is to extract the Mobile Phone Number---------
+                # Mobile Phone Number
                 elif "-" in i:
-                    data["mobile_phone_number"].append(i)
-                    if len(data["mobile_phone_number"]) > 1:
-                        data["mobile_phone_number"] = "  and  ".join(data["mobile_phone_number"])
+                    data["mobile_phone_number"][0] = i if not data["mobile_phone_number"][0] else data["mobile_phone_number"][0] + " and " + i
 
-                # ---------This is to extract the Area name---------
+                # Area
                 p1_area = re.findall('^[0-9].+, [a-zA-Z]+', i)
                 p2_area = re.findall('^[0-9].+ [a-zA-Z]+', i)
                 if p1_area:
-                    data["area"].append(p1_area[0].split(",")[0].strip(" "))
+                    data["area"][0] = p1_area[0].split(",")[0].strip(" ")
                 elif p2_area:
-                    data["area"].append(p2_area[0])
+                    data["area"][0] = p2_area[0]
 
-                # ---------This is to extract the City name---------
+                # City
                 p1_city = re.findall('.+St , ([a-zA-Z]+).+', i)
                 p2_city = re.findall('^E.*', i)
                 p3_city = re.findall('.+St,, ([a-zA-Z]+).+', i)
                 if p1_city:
-                    data["city"].append(p1_city[0])
+                    data["city"][0] = p1_city[0]
                 elif p2_city:
-                    data["city"].append(p2_city[0].strip(','))
+                    data["city"][0] = p2_city[0].strip(',')
                 elif p3_city:
-                    data["city"].append(p3_city[0])
+                    data["city"][0] = p3_city[0]
 
-                # ---------This is to extract the State name---------
+                # State
                 indian_states = [
                     "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
                     "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli",
@@ -225,18 +192,16 @@ if selected == "Extract":
                     "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "TamilNadu", "Telangana",
                     "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
                 ]
-
                 state_pattern = r'\b(?:' + '|'.join(indian_states) + r')\b'
                 p1_state = re.findall(state_pattern, i)
                 if p1_state:
-                    data["state"].append(p1_state[0])
+                    data["state"][0] = p1_state[0]
 
-                # ---------This is to extract the Pincodes---------
+                # Pincode
                 regex_pincode = r'\b\d{6,7}\b'
                 p1_pincode = re.findall(regex_pincode, i)
                 if p1_pincode:
-                    data["pincode"].append(p1_pincode[0])
-
+                    data["pincode"][0] = p1_pincode[0]
 
         extractData(result)
         df = pd.DataFrame(data)
@@ -252,7 +217,6 @@ if selected == "Extract":
         if st.button("Upload to SQL Database"):
             with st.spinner("Uploading..."):
                 for index, row in df.iterrows():
-                    # 11 %s because we need to insert values into 11 columns assigned above
                     sql = """INSERT INTO business_card_info VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
                     cursor1.execute(sql, tuple(row))
                     db1.commit()
